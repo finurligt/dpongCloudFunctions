@@ -4,10 +4,16 @@ admin.initializeApp();
 
 exports.submitGame = functions.https.onCall((data, context) => {
 
-      var ref = admin.database().ref();
+      var ref = admin.database().ref('/games');
 
-      var number = Math.floor(Math.random() * (10)) + 1;
 
-      return ref.update({ Points: number });
+
+      //return ref.update({ Game: data.winner });
+
+      var newGame = ref.push();
+      newGame.set({
+        winner: data.winner,
+        loser: data.loser
+      });
 
 });
