@@ -12,8 +12,8 @@ exports.submitGame = functions.https.onCall((data, context) => {
 
       var newGame = ref.push();
       newGame.set({
-        winner: data.winner,
-        loser: data.loser
+        winners: data.winners,
+        losers: data.losers
       });
 
 });
