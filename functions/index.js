@@ -2,26 +2,25 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 
-//it might be better to do all this in a single transaction()
-//cuz something weird happens when i do it like this and the
-//transaction() of elo points fails a lot
-//(its ok tho firebase retries until it succeeds)
-//but im too lazy
+//fuck transactions. De funkar inte alls. Aldrig igen.
 exports.submitGame = functions.https.onCall((data, context) => {
   var gamesRef = admin.database().ref('/games');
   var playerGamesRef = admin.database().ref('/playerGames');
   var playersRef = admin.database().ref('/players');
 
-  //calculating average team ratings
-
-  var winnersRating = 0;
-  var losersRating = 0;
-  playersRef.once("value").then(function(playersSnapshot) {
+  playersRef.transaction(function(post) {
+    //calculating average team ratings
+    if(post==null) {
+      console.log("post is null, hopefully firebase will retry");
+      return 0;
+    }
+    var winnersRating = 0;
+    var losersRating = 0;
     data.winners.forEach(function(entry) {
-      console.log(playersSnapshot.val());
+      console.log(post);
       console.log(entry);
-      console.log(playersSnapshot.val()[entry]);
-      winnersRating+=playersSnapshot.val()[entry].rating;
+      console.log(post[entry]);
+      winnersRating+=entry[entry].rating;
     });
 
     data.losers.forEach(function(entry) {
@@ -38,19 +37,26 @@ exports.submitGame = functions.https.onCall((data, context) => {
     var ratingChange = Math.round(kValue*(1-expectedA));
 
     data.winners.forEach(function(entry) {
-      playersRef.child(entry).transaction(function(post) {
-        console.log(playersRef);
-        console.log(playersRef.child(entry));
-        console.log(entry);
-        console.log(post);
-        if (post!=null) {
-          post.rating+=ratingChange;
-        }
-        return post;
-      });
+      post[entry].rating+=ratingChange;
     });
-  });
 
+    data.losers.forEach(function(entry) {
+      post[entry].rating-=ratingChange;
+    });
+    return post
+  }, function(error, committed, snapshot) {
+    if (error) {
+        console.log("error in transaction");
+    } else if (!committed) {
+        console.log("transaction not committed");
+    } else {
+        console.log("Transaction Committed");
+    }
+  }, true
+);
+
+  //below is game logging, not as important to get right
+  //so not done in transaction
   var gameData = {
     winners: data.winners,
     losers: data.losers,
