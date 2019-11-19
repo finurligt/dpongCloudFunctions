@@ -76,3 +76,11 @@ exports.submitGame = functions.https.onCall((data, context) => {
     }
   }, true);
 });
+
+exports.registerUser = functions.https.onCall((data, context) => {
+  admin.auth().createUser({
+    email: data.email,
+    password: data.password,
+    displayName: data.displayName,
+  });
+});
