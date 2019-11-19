@@ -83,4 +83,11 @@ exports.registerUser = functions.https.onCall((data, context) => {
     password: data.password,
     displayName: data.displayName,
   });
+
+  var playersRef = admin.database().ref('/players');
+  firebase.database().ref('players/' + data.displayName).set({
+    name: data.displayName,
+    rating: 1200
+  });
+
 });
