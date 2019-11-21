@@ -16,7 +16,7 @@ exports.submitGame = functions.https.onCall((data, context) => {
 
     playersRef.transaction(function(post) {
 
-
+      console.log("den kördes nu :)");
       if(post==null) {
         console.log("post is null, hopefully firebase will retry");
         return 0;
@@ -25,9 +25,11 @@ exports.submitGame = functions.https.onCall((data, context) => {
         var userIsInGame=false;
 
         data.winners.concat(data.losers).forEach(function(entry) {
-          if (post[entry]) {
+          console.log(post[entry]);
+          if (typeof post[entry]  != 'undefined') {
             console.log("player exists: " + entry);
           } else {
+            console.log("den returnar bullshit nu :(")
             resolve({
               result: "player doesnt exist: " + entry
             })
@@ -116,15 +118,19 @@ exports.selectUsername = functions.https.onCall((data, context) => {
         resolve({
           result: "fail: username allready exists"
         })
+      } else if (typeof context.auth == 'undefined') {
+        resolve({
+          result: "no user logged in"
+        })
       } else {
-        console.log("username does not exist");
-        admin.database().ref('/players/'+data.username).set({
-          name: data.username,
-          rating: 1200,
-        });
-
         admin.auth().getUser(context.auth.uid).then(function(user) {
           if (user.displayName==null) {
+            console.log("actually setting username");
+            admin.database().ref('/players/'+data.username).set({
+              name: data.username,
+              rating: 1200,
+            });
+
             admin.auth().updateUser(context.auth.uid, {
               displayName: data.username
             }).then(function(updateUser) {
@@ -132,28 +138,10 @@ exports.selectUsername = functions.https.onCall((data, context) => {
              resolve({
                result: "success",
              })
-           })
-         } else {
-           resolve({
-             result: "user allready has a username"
-           })
-         }
+            })
+          }
         })
-
-
-
       }
     });
   });
-
-
-
-  //.then(function(userRecord) {
-  //  admin.database().ref('players/' + data.displayName).set({
-  //    name: data.displayName,
-  //    rating: 1200
-  //  });
-  //});
-
-
 });
