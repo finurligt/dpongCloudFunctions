@@ -25,11 +25,13 @@ exports.submitGame = functions.https.onCall((data, context) => {
         var userIsInGame=false;
 
         data.winners.concat(data.losers).forEach(function(entry) {
-          console.log(post[entry]);
+          //console.log("entry: " + entry);
+          //console.log("post: " + post);
+          //console.log("post[entry]: " + post[entry]);
           if (typeof post[entry]  != 'undefined') {
             console.log("player exists: " + entry);
           } else {
-            console.log("den returnar bullshit nu :(")
+            console.log("player does not exist " + entry)
             resolve({
               result: "player doesnt exist: " + entry
             })
