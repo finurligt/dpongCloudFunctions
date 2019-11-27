@@ -7,9 +7,24 @@ for (var i=0;i<vars.length;i++) {
   var pair = vars[i].split("=");
   if(pair[0] == "id"){id = pair[1];}
 }
-console.log(id);
 
 firebase.database().ref('/players/').once('value').then(function(snapshot) {
+  if (id=="") {
+    firebase.auth().onAuthStateChanged(function(user) {
+      if (user) {
+        // User is signed in.
+        id=user.displayName;
+        document.getElementById('pofile-li').classList.add("active");
+      }
+      setUpProfile(snapshot);
+    });
+  } else {
+    setUpProfile(snapshot);
+  }
+
+});
+
+function setUpProfile(snapshot) {
   var player = snapshot.val()[id];
   var players = Object.values(snapshot.val()).sort(function(a, b) {
     return b.rating-a.rating;
@@ -27,7 +42,7 @@ firebase.database().ref('/players/').once('value').then(function(snapshot) {
       fillTable(Object.values(snapshot.val()))
     }
   });
-});
+}
 
 function formatDate(date) {
     var d = new Date(date),

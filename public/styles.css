@@ -84,10 +84,6 @@ input[type=submit] {
   float: right;
 }
 
-#submit-game-description {
-  margin-top: 16px;
-}
-
 #profile {
   border-left: 1px solid #A9A9A9;
   border-right: 1px solid #A9A9A9;
@@ -125,7 +121,7 @@ input[type=submit] {
   border-radius: 6px;
   color: #222;
   margin: 0;
-  margin-top: 4px;
+  margin-top: 6px;
   margin-right: 4px;
 }
 
