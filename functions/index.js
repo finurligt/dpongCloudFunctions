@@ -8,50 +8,35 @@ exports.submitGame = functions.https.onCall((data, context) => {
   var playerGamesRef = admin.database().ref('/playerGames');
   var playersRef = admin.database().ref('/players');
 
-  return new Promise((resolve,reject) => {
+  var promise = new Promise((resolve,reject) => {
     //this wont generate any error is the log,
     //only "Ignoring exception from a finished function"
     //if u want logged errors:
     //hardcode post variable or catch errors and log manually
+    var winnersPromiseArray = [];
+    data.winners.forEach(function(entry) {
+      winnersPromiseArray.push(admin.database().ref('/players/'+entry))
+    });
+    var losersPromiseArray = [];
+    data.losers.forEach(function(entry) {
+      losersPromiseArray.push(admin.database().ref('/players/'+entry))
+    });
 
-    playersRef.transaction(function(post) {
-
-      console.log("den kördes nu :)");
-      if(post==null) {
-        console.log("post is null, hopefully firebase will retry");
-        return 0;
-      } else {
-        //check input data
-        var userIsInGame=false;
-
-        data.winners.concat(data.losers).forEach(function(entry) {
-          //console.log("entry: " + entry);
-          //console.log("post: " + post);
-          //console.log("post[entry]: " + post[entry]);
-          if (typeof post[entry]  != 'undefined') {
-            console.log("player exists: " + entry);
-          } else {
-            console.log("player does not exist " + entry)
-            resolve({
-              result: "player doesnt exist: " + entry
-            })
-            return;
-          }
-        })
-
+    Promise.all(winnersPromiseArray).then(function(winnersArray) {
+      Promise.all(losersPromiseArray).then(function(losersArray) {
         //calculating average team ratings
         var winnersRating = 0;
         var losersRating = 0;
-        data.winners.forEach(function(entry) {
-          winnersRating+=post[entry].rating;
+        winnersArray.forEach(function(entry) {
+          winnersRating+=entry.rating;
         });
 
-        data.losers.forEach(function(entry) {
-          losersRating+=post[entry].rating;
+        losersArray.forEach(function(entry) {
+          losersRating+=entry.rating;
         });
 
-        winnersRating/=data.winners.length;
-        losersRating/=data.losers.length;
+        winnersRating/=winnersArray.length;
+        losersRating/=losersArray.length;
 
         //insert elo math here
         var expectedA = 1 / (1 + Math.pow(10,(losersRating-winnersRating)/400));
@@ -59,12 +44,28 @@ exports.submitGame = functions.https.onCall((data, context) => {
         var kValue = 40;
         var ratingChange = Math.round(kValue*(1-expectedA));
 
-        data.winners.forEach(function(entry) {
-          post[entry].rating+=ratingChange;
+        winnersArray.forEach(function(entry) {
+          admin.database().ref('/players/'+entry.name).transaction(function(post) {
+            if (post==null) {
+              console.log("post for " + entry.name +" is null, hopefully firebase will retry");
+              return 0;
+            } else {
+              post.rating+=ratingChange;
+            }
+          });
         });
 
-        data.losers.forEach(function(entry) {
-          post[entry].rating-=ratingChange;
+        losersArray.forEach(function(entry) {
+          admin.database().ref('/players/'+entry.name).transaction(function(post) {
+            if (post==null) {
+              resolve({
+                result: "0",
+              })
+              return 0;
+            } else {
+              post.rating-=ratingChange;
+            }
+          });
         });
 
         //below is game logging
@@ -83,28 +84,19 @@ exports.submitGame = functions.https.onCall((data, context) => {
           var game = playerGamesRef.child(entry).push(gameData);
           game.set(gameData);
         });
-        return post;
-      }
 
-    }, function(error, committed, snapshot) {
-      if (error) {
-          console.log("error in transaction");
-          resolve({
-            result: error
-          })
-      } else if (!committed) {
-          console.log("transaction not committed");
-          resolve({
-            result: "transaction not committed"
-          })
-      } else {
-          console.log("Transaction Committed");
-          resolve({
-            result: "success"
-          })
-      }
-    }, true);
-  })
+        resolve({
+          result: "success",
+        })
+      });
+    });
+  });
+
+  await promise;
+  if (promise.result="0") {
+    return 0;
+  }
+  else return promise;
 });
 
 exports.selectUsername = functions.https.onCall((data, context) => {
