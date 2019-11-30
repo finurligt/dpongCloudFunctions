@@ -21,82 +21,81 @@ exports.submitGame = functions.https.onCall((data, context) => {
     data.losers.forEach(function(entry) {
       losersPromiseArray.push(admin.database().ref('/players/'+entry))
     });
+    Promise.all([Promise.all(winnersPromiseArray),Promise.all(losersPromiseArray)]).then(function(arrayOfArray) {
+      var winnersArray = arrayOfArray[0];
+      var losersArray = arrayOfArray[1];
 
-    Promise.all(winnersPromiseArray).then(function(winnersArray) {
-      Promise.all(losersPromiseArray).then(function(losersArray) {
-        //calculating average team ratings
-        var winnersRating = 0;
-        var losersRating = 0;
-        winnersArray.forEach(function(entry) {
-          winnersRating+=entry.rating;
+      //calculating average team ratings
+      var winnersRating = 0;
+      var losersRating = 0;
+      winnersArray.forEach(function(entry) {
+        winnersRating+=entry.rating;
+      });
+
+      losersArray.forEach(function(entry) {
+        losersRating+=entry.rating;
+      });
+
+      winnersRating/=winnersArray.length;
+      losersRating/=losersArray.length;
+
+      //insert elo math here
+      var expectedA = 1 / (1 + Math.pow(10,(losersRating-winnersRating)/400));
+
+      var kValue = 40;
+      var ratingChange = Math.round(kValue*(1-expectedA));
+
+      winnersArray.forEach(function(entry) {
+        admin.database().ref('/players/'+entry.name).transaction(function(post) {
+          if (post==null) {
+            return 0;
+          } else {
+            return post.rating+=ratingChange;
+          }
         });
+      });
 
-        losersArray.forEach(function(entry) {
-          losersRating+=entry.rating;
+      losersArray.forEach(function(entry) {
+        admin.database().ref('/players/'+entry.name).transaction(function(post) {
+          if (post==null) {
+            return 0;
+          } else {
+            return post.rating-=ratingChange;
+          }
         });
+      });
 
-        winnersRating/=winnersArray.length;
-        losersRating/=losersArray.length;
 
-        //insert elo math here
-        var expectedA = 1 / (1 + Math.pow(10,(losersRating-winnersRating)/400));
 
-        var kValue = 40;
-        var ratingChange = Math.round(kValue*(1-expectedA));
-
-        winnersArray.forEach(function(entry) {
-          admin.database().ref('/players/'+entry.name).transaction(function(post) {
-            if (post==null) {
-              console.log("post for " + entry.name +" is null, hopefully firebase will retry");
-              return 0;
-            } else {
-              post.rating+=ratingChange;
-            }
-          });
-        });
-
-        losersArray.forEach(function(entry) {
-          admin.database().ref('/players/'+entry.name).transaction(function(post) {
-            if (post==null) {
-              resolve({
-                result: "0",
-              })
-              return 0;
-            } else {
-              post.rating-=ratingChange;
-            }
-          });
-        });
-
-        //below is game logging
-        var gameData = {
-          winners: data.winners,
-          losers: data.losers,
-          timestamp: admin.database.ServerValue.TIMESTAMP,
-          rating: ratingChange
-        }
-
-        var newGame = gamesRef.push();
-        newGame.set(gameData);
-
-        data.winners.concat(data.losers).forEach(function(entry) {
-          //add data to players "match histories"
-          var game = playerGamesRef.child(entry).push(gameData);
-          game.set(gameData);
-        });
-
-        resolve({
-          result: "success",
-        })
+      resolve({
+        result: "success",
       });
     });
   });
 
-  await promise;
-  if (promise.result="0") {
-    return 0;
+  //below is game logging
+  var gameData = {
+    winners: data.winners,
+    losers: data.losers,
+    timestamp: admin.database.ServerValue.TIMESTAMP,
+    rating: ratingChange
   }
-  else return promise;
+
+  var newGame = gamesRef.push();
+  newGame.set(gameData);
+
+  data.winners.concat(data.losers).forEach(function(entry) {
+    //add data to players "match histories"
+    var game = playerGamesRef.child(entry).push(gameData);
+    game.set(gameData);
+  });
+
+  //await promise;
+  //if (promise.result="0") {
+  //  return 0;
+  //}
+  //else return promise;
+  return promise;
 });
 
 exports.selectUsername = functions.https.onCall((data, context) => {
