@@ -80,7 +80,15 @@ exports.submitGame = functions.https.onCall((data, context) => {
       var newGame = gamesRef.push();
       newGame.set(gameData);
 
-      data.winners.concat(data.losers).forEach(function(entry) {
+      gameData["isWinner"]=true;
+      data.winners.forEach(function(entry) {
+        //add data to players "match histories"
+        var game = playerGamesRef.child(entry).push(gameData);
+        game.set(gameData);
+      });
+
+      gameData["isWinner"]=false;
+      data.losers.forEach(function(entry) {
         //add data to players "match histories"
         var game = playerGamesRef.child(entry).push(gameData);
         game.set(gameData);
