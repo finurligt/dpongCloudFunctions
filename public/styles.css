@@ -1,3 +1,8 @@
+#bootstrap-overrides nav {
+  margin-bottom: 0px;
+  border-radius: 0px;
+}
+
 #bootstrap-overrides .navbar-brand {
   color: #F280A1;
   font-size: 23px;
@@ -107,6 +112,14 @@ input[type=submit] {
   display: none;
 }
 
+/* Make the navbar tighter when screensize gets low */
+@media (min-width:768px) and (max-width:900px) {
+  #bootstrap-overrides ul.nav.navbar-nav a {
+      padding-left: 7px;
+      padding-right: 7px;
+  }
+}
+
 @media (max-width:767px) {
   #profile{
     border:0px solid !important
@@ -133,4 +146,29 @@ input[type=submit] {
 .close {
   margin-left: 3px;
   margin-right: 3px;
+}
+
+#bootstrap-overrides .winner-game {
+  background-color: #04F40033;
+}
+
+#bootstrap-overrides .loser-game {
+  background-color: #F4000033;
+}
+
+.news-post {
+  border: 2px solid #222;
+  padding: 5px 15px 10px 15px;
+  border-radius: 15px;
+  color: #222;
+  margin-bottom: 15px;
+}
+
+.welcome-message {
+  width: 100%;
+  padding: 5px;
+}
+
+.news-timestamp {
+    text-align:right;
 }

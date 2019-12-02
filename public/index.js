@@ -1,38 +1,50 @@
-function config() {
-  document.getElementById('index-li').classList.add("active");
-  var playersRef = firebase.database().ref('players')
-  playersRef.on('value',gotData, gotErr)
+
+firebase.database().ref('/news/').once('value').then(function(snapshot) {
+  console.log("detta hände");
+
+  data=snapshot.val();
+  if (data!=null) {
+    console.log("no news");
+
+    fillNews(data)
+  }
+});
+
+function formatDate(date) {
+    var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear(),
+        hours = '' + d.getHours(),
+        minutes = '' + d.getMinutes();
+
+    if (month.length < 2)
+        month = '0' + month;
+    if (day.length < 2)
+        day = '0' + day;
+    if (hours.length < 2)
+        hours = '0' + hours;
+    if (minutes.length < 2)
+        minutes = '0' + minutes;
+    return [year, month, day].join('-')+" "+hours + ":" + minutes;
 }
-config();
 
-function gotData(data)  {
-  fillTable(data);
-}
 
-function gotErr(err) {
-  console.log('Error!')
-  console.log(err);
-}
+function fillNews(data) {
+  var newsArray = Object.values(data);
 
-function fillTable(data) {
-
-  var playerArray = []
-  data.forEach(function(child) {
-    playerArray.push([child.val().name,child.val().rating]);
-  });
-
-  playerArray.sort(function(a ,b) {
-    return b[1] - a[1];
+  newsArray = newsArray.sort(function(a ,b) {
+    return b.timestamp-a.timestamp;
   })
 
-  console.log(playerArray);
+  console.log(newsArray);
 
-  const tableBody = document.getElementById('tableBody');
+  const tableBody = document.getElementById('newsfeed');
   let dataHtml = '';
-  for (let i = 0; i < playerArray.length; i++) {
-    var href = "profile.html?id=" + playerArray[i][0];
-    dataHtml += `<tr><td><a href="${href}">${i+1}</a></td><td><a href="${href}">${playerArray[i][0]}</a></td><td><a href="${href}">${playerArray[i][1]}</a></td></tr>`
-  }
+  newsArray.forEach(function(child) {
+    dataHtml += `<div class="news-post"><h3>${child.title}</h3><h5>${child.text}</h5><h6 class="news-timestamp">${formatDate(child.timestamp)}</h6></div>`;
+
+  });
 
   tableBody.innerHTML = dataHtml;
 

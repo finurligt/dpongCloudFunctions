@@ -21,7 +21,7 @@ function submitButton() {
   }).then(function(submitReturn) {
     if (submitReturn.data.result=="success") {
       console.log(submitReturn.data.result);
-      window.location.href = 'index.html';
+      window.location.href = 'games.html';
       //should perhaps lead to a complete match history?
       //or "profile.html?id=" if currentUser has to be in the game
     } else {

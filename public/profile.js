@@ -10,7 +10,7 @@ firebase.database().ref('/players/').once('value').then(function(snapshot) {
       if (user) {
         // User is signed in.
         id=user.displayName;
-        document.getElementById('pofile-li').classList.add("active");
+        document.getElementById('profile-li').classList.add("active");
       }
       setUpProfile(snapshot);
     });
@@ -73,7 +73,13 @@ function fillTable(data) {
   const tableBody = document.getElementById('tableBody');
   let dataHtml = '';
   gamesArray.forEach(function(child) {
-    dataHtml += `<tr><td><a href="#">${child.winners.join(", ")}</a></td><td><a href="#">${child.losers.join(", ")}</a></td><td><a href="#">${child.rating}</a></td><td><a href="#">${formatDate(new Date(child.timestamp))}</a></td></tr>`
+    if (child.winners.includes(id)) {
+      //player is winner in this game
+      console.log("this happened");
+      dataHtml += `<tr class="winner-game"><td><a href="profile.html?id=${child.winners[0]}">${child.winners.join(", ")}</a></td><td><a href="profile.html?id=${child.losers[0]}">${child.losers.join(", ")}</a></td><td><a href="#">${child.rating}</a></td><td><a href="#">${formatDate(new Date(child.timestamp))}</a></td></tr>`
+    } else {
+      dataHtml += `<tr class="loser-game"><td><a href="profile.html?id=${child.winners[0]}">${child.winners.join(", ")}</a></td><td><a href="profile.html?id=${child.losers[0]}">${child.losers.join(", ")}</a></td><td><a href="#">${child.rating}</a></td><td><a href="#">${formatDate(new Date(child.timestamp))}</a></td></tr>`
+    }
   });
 
   tableBody.innerHTML = dataHtml;
